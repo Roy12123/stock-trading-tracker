@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, date, timedelta
 import os
@@ -13,6 +13,9 @@ if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://', 1)
 
 db = SQLAlchemy(app)
+
+# 密碼設定
+PASSWORD = os.environ.get('APP_PASSWORD', 'B122917588')
 
 # 數據庫模型
 class StockTransaction(db.Model):
@@ -31,17 +34,53 @@ class StockTransaction(db.Model):
             'notes': self.notes
         }
 
+# 檢查登入裝飾器
+def login_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 # 路由
 @app.route('/')
+@login_required
 def index():
     return render_template('index.html')
 
+@app.route('/login')
+def login():
+    # 如果已登入，重定向到主頁
+    if session.get('logged_in'):
+        return redirect(url_for('index'))
+    return render_template('login.html')
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    data = request.get_json()
+    password = data.get('password', '')
+
+    if password == PASSWORD:
+        session['logged_in'] = True
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'message': '密碼錯誤'}), 401
+
+@app.route('/api/logout', methods=['POST'])
+def api_logout():
+    session.pop('logged_in', None)
+    return jsonify({'success': True})
+
 @app.route('/api/transactions', methods=['GET'])
+@login_required
 def get_transactions():
     transactions = StockTransaction.query.order_by(StockTransaction.date.desc()).all()
     return jsonify([t.to_dict() for t in transactions])
 
 @app.route('/api/transactions', methods=['POST'])
+@login_required
 def create_transaction():
     data = request.get_json()
     transaction = StockTransaction(
@@ -55,6 +94,7 @@ def create_transaction():
     return jsonify(transaction.to_dict()), 201
 
 @app.route('/api/transactions/<int:transaction_id>', methods=['DELETE'])
+@login_required
 def delete_transaction(transaction_id):
     transaction = StockTransaction.query.get_or_404(transaction_id)
     db.session.delete(transaction)
@@ -62,6 +102,7 @@ def delete_transaction(transaction_id):
     return '', 204
 
 @app.route('/api/transactions/delete-all', methods=['DELETE'])
+@login_required
 def delete_all_transactions():
     """刪除所有交易記錄"""
     try:
@@ -81,6 +122,7 @@ def delete_all_transactions():
 
 
 @app.route('/api/import-data', methods=['POST'])
+@login_required
 def import_data():
     """匯入交易資料"""
     data = request.get_json()
@@ -143,6 +185,7 @@ def import_data():
         }), 500
 
 @app.route('/api/statistics')
+@login_required
 def get_statistics():
     today = date.today()
     period = request.args.get('period', 'monthly')  # 預設為每月

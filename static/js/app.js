@@ -455,6 +455,26 @@ function formatDate(dateString) {
     });
 }
 
+// 登出功能
+async function logout() {
+    if (!confirm('確定要登出嗎？')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/logout', {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            window.location.href = '/login';
+        }
+    } catch (error) {
+        console.error('登出失敗:', error);
+        showNotification('登出失敗', 'error');
+    }
+}
+
 function showNotification(message, type = 'info') {
     // 創建通知元素
     const notification = document.createElement('div');
