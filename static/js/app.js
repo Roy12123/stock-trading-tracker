@@ -179,34 +179,70 @@ async function deleteTransaction(id) {
     }
 }
 
-// 刪除所有交易記錄
-async function deleteAllTransactions() {
-    if (!confirm('⚠️ 警告：確定要刪除所有交易記錄嗎？此操作無法復原！')) {
+// 打開刪除模態框
+function openDeleteModal() {
+    // 設定當前月份為預設值
+    const today = new Date();
+    const currentMonth = today.toISOString().slice(0, 7); // YYYY-MM 格式
+    document.getElementById('deleteMonth').value = currentMonth;
+
+    document.getElementById('deleteModal').style.display = 'block';
+}
+
+// 確認刪除
+async function confirmDelete() {
+    const deleteOption = document.querySelector('input[name="deleteOption"]:checked').value;
+
+    let confirmMessage = '';
+    let deleteData = { type: deleteOption };
+
+    if (deleteOption === 'month') {
+        const selectedMonth = document.getElementById('deleteMonth').value;
+        if (!selectedMonth) {
+            showNotification('請選擇要刪除的月份', 'error');
+            return;
+        }
+
+        const [year, month] = selectedMonth.split('-');
+        confirmMessage = `確定要刪除 ${year} 年 ${month} 月的所有交易記錄嗎？`;
+        deleteData.month = selectedMonth;
+    } else {
+        confirmMessage = '⚠️ 警告：確定要刪除所有交易記錄嗎？此操作無法復原！';
+    }
+
+    if (!confirm(confirmMessage)) {
         return;
     }
 
-    // 二次確認
-    if (!confirm('請再次確認：真的要刪除所有資料嗎？')) {
-        return;
+    // 刪除所有資料需要二次確認
+    if (deleteOption === 'all') {
+        if (!confirm('請再次確認：真的要刪除所有資料嗎？')) {
+            return;
+        }
     }
 
     try {
-        const response = await fetch('/api/transactions/delete-all', {
-            method: 'DELETE'
+        const response = await fetch('/api/transactions/delete', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(deleteData)
         });
 
         const result = await response.json();
 
         if (result.success) {
             showNotification(result.message, 'success');
+            closeModal('deleteModal');
             loadTransactions();
             loadStatistics();
         } else {
             showNotification(result.message, 'error');
         }
     } catch (error) {
-        console.error('刪除所有交易記錄失敗:', error);
-        showNotification('刪除所有交易記錄失敗', 'error');
+        console.error('刪除交易記錄失敗:', error);
+        showNotification('刪除交易記錄失敗', 'error');
     }
 }
 

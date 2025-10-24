@@ -28,8 +28,8 @@
                 <button class="btn btn-secondary" onclick="openImportModal()">
                     <i class="fas fa-upload"></i> 匯入資料
                 </button>
-                <button class="btn btn-danger" onclick="deleteAllTransactions()">
-                    <i class="fas fa-trash-alt"></i> 刪除所有資料
+                <button class="btn btn-danger" onclick="openDeleteModal()">
+                    <i class="fas fa-trash-alt"></i> 刪除資料
                 </button>
                 <button class="btn btn-secondary" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i> 登出
@@ -170,6 +170,49 @@
                         <button type="submit" class="btn btn-primary">匯入資料</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 刪除資料模態框 -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>刪除交易資料</h3>
+                <span class="close" onclick="closeModal('deleteModal')">&times;</span>
+            </div>
+            <div class="delete-content">
+                <div class="delete-options">
+                    <h4>選擇要刪除的資料範圍</h4>
+                    <div class="delete-option-group">
+                        <label class="radio-option">
+                            <input type="radio" name="deleteOption" value="month" checked>
+                            <span class="radio-label">
+                                <i class="fas fa-calendar-alt"></i>
+                                刪除特定月份
+                            </span>
+                        </label>
+                        <div class="month-selector" id="monthSelector">
+                            <label for="deleteMonth">選擇月份：</label>
+                            <input type="month" id="deleteMonth" required>
+                        </div>
+                    </div>
+                    <div class="delete-option-group">
+                        <label class="radio-option">
+                            <input type="radio" name="deleteOption" value="all">
+                            <span class="radio-label">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                刪除所有資料
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('deleteModal')">取消</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmDelete()">
+                        <i class="fas fa-trash"></i> 確認刪除
+                    </button>
+                </div>
             </div>
         </div>
     </div>

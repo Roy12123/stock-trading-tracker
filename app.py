@@ -101,18 +101,55 @@ def delete_transaction(transaction_id):
     db.session.commit()
     return '', 204
 
-@app.route('/api/transactions/delete-all', methods=['DELETE'])
+@app.route('/api/transactions/delete', methods=['DELETE'])
 @login_required
-def delete_all_transactions():
-    """刪除所有交易記錄"""
+def delete_transactions():
+    """刪除交易記錄（全部或特定月份）"""
     try:
-        num_deleted = StockTransaction.query.delete()
-        db.session.commit()
-        return jsonify({
-            'success': True,
-            'deleted_count': num_deleted,
-            'message': f'成功刪除 {num_deleted} 筆交易記錄'
-        })
+        data = request.get_json()
+        delete_type = data.get('type', 'all')  # 'all' 或 'month'
+
+        if delete_type == 'month':
+            # 刪除特定月份
+            year_month = data.get('month')  # 格式: "2025-01"
+            if not year_month:
+                return jsonify({
+                    'success': False,
+                    'message': '請提供月份'
+                }), 400
+
+            # 解析年月
+            year, month = map(int, year_month.split('-'))
+            month_start = date(year, month, 1)
+
+            # 計算月末
+            if month == 12:
+                month_end = date(year + 1, 1, 1)
+            else:
+                month_end = date(year, month + 1, 1)
+
+            # 刪除該月份的記錄
+            num_deleted = StockTransaction.query.filter(
+                StockTransaction.date >= month_start,
+                StockTransaction.date < month_end
+            ).delete()
+
+            db.session.commit()
+            return jsonify({
+                'success': True,
+                'deleted_count': num_deleted,
+                'message': f'成功刪除 {year} 年 {month} 月的 {num_deleted} 筆交易記錄'
+            })
+        else:
+            # 刪除所有記錄
+            num_deleted = StockTransaction.query.delete()
+            db.session.commit()
+            return jsonify({
+                'success': True,
+                'deleted_count': num_deleted,
+                'message': f'成功刪除所有 {num_deleted} 筆交易記錄'
+            })
+
     except Exception as e:
         db.session.rollback()
         return jsonify({

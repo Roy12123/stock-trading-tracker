@@ -798,3 +798,87 @@ form {
     border-color: #3498db;
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
+
+/* 刪除資料模態框樣式 */
+.delete-content {
+    padding: 25px;
+}
+
+.delete-options h4 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+}
+
+.delete-option-group {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+}
+
+.delete-option-group:last-child {
+    border-left-color: #e74c3c;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.radio-option input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    margin-right: 12px;
+    cursor: pointer;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.radio-label i {
+    font-size: 18px;
+    color: #3498db;
+}
+
+.delete-option-group:last-child .radio-label i {
+    color: #e74c3c;
+}
+
+.month-selector {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #ddd;
+}
+
+.month-selector label {
+    display: block;
+    margin-bottom: 8px;
+    color: #2c3e50;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.month-selector input[type="month"] {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.month-selector input[type="month"]:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
