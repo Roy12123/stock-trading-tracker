@@ -210,15 +210,11 @@ body {
 .chart-wrapper {
     position: relative;
     width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
 }
 
 .chart-container {
     position: relative;
     height: 400px;
-    min-width: 100%;
 }
 
 .chart-header h3 {
@@ -571,30 +567,11 @@ form {
     }
 
     .chart-wrapper {
-        margin: 0 -15px;
-        padding: 0 15px;
-        /* 顯示滾動提示 */
-        position: relative;
-    }
-
-    .chart-wrapper::after {
-        content: '← 左右滑動查看更多 →';
-        position: absolute;
-        bottom: 5px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 11px;
-        color: #95a5a6;
-        pointer-events: none;
-        background: rgba(255, 255, 255, 0.9);
-        padding: 4px 12px;
-        border-radius: 12px;
-        opacity: 0.7;
+        width: 100%;
     }
 
     .chart-container {
         height: 280px;
-        min-width: 100%;
     }
 
     /* 交易記錄表格 - 手機版 */

@@ -227,12 +227,13 @@ function updateRevenueChart(revenueData, period) {
         return;
     }
 
-    // 手機版只顯示最近8個月，桌面版顯示全部
+    // 手機版只顯示最近5筆，桌面版顯示全部
     const isMobile = window.innerWidth <= 768;
     let displayData = revenueData;
+    let displayLimit = 5; // 手機版顯示數量
 
-    if (isMobile && period === 'monthly' && revenueData.length > 8) {
-        displayData = revenueData.slice(-8);  // 只顯示最近8個月
+    if (isMobile && revenueData.length > displayLimit) {
+        displayData = revenueData.slice(-displayLimit);  // 只顯示最近5筆
     }
 
     // 格式化標籤
@@ -248,26 +249,27 @@ function updateRevenueChart(revenueData, period) {
         return item.period;
     });
 
+    // 為正值和負值設置不同的顏色
+    const backgroundColors = displayData.map(item =>
+        item.revenue >= 0 ? 'rgba(46, 204, 113, 0.8)' : 'rgba(231, 76, 60, 0.8)'
+    );
+
+    const borderColors = displayData.map(item =>
+        item.revenue >= 0 ? 'rgba(46, 204, 113, 1)' : 'rgba(231, 76, 60, 1)'
+    );
+
     stockChart = new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
                 label: '營收',
                 data: displayData.map(item => item.revenue),
-                borderColor: 'rgba(52, 152, 219, 1)',
-                backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,  // 平滑曲線
-                pointRadius: 6,
-                pointHoverRadius: 8,
-                pointBackgroundColor: 'rgba(52, 152, 219, 1)',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: 'rgba(52, 152, 219, 1)',
-                pointHoverBorderWidth: 3
+                backgroundColor: backgroundColors,
+                borderColor: borderColors,
+                borderWidth: 2,
+                borderRadius: 8,
+                barThickness: isMobile ? 'flex' : 50
             }]
         },
         options: {
@@ -294,14 +296,12 @@ function updateRevenueChart(revenueData, period) {
                     callbacks: {
                         title: function(context) {
                             const index = context[0].dataIndex;
-                            const originalIndex = isMobile && period === 'monthly' ?
-                                revenueData.length - 8 + index : index;
+                            const originalIndex = isMobile && revenueData.length > displayLimit ?
+                                revenueData.length - displayLimit + index : index;
                             return revenueData[originalIndex].period;
                         },
                         label: function(context) {
-                            const value = context.parsed.y;
-                            const color = value >= 0 ? '📈' : '📉';
-                            return `${color} 營收: ${formatCurrency(value)}`;
+                            return `營收: ${formatCurrency(context.parsed.y)}`;
                         }
                     }
                 }
