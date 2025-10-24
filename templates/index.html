@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票交易收益記錄</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- 標題區域 -->
+        <header class="header">
+            <h1><i class="fas fa-chart-line"></i> 股票交易收益記錄</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="openAddTransactionModal()">
+                    <i class="fas fa-plus"></i> 新增交易
+                </button>
+                <button class="btn btn-secondary" onclick="openImportModal()">
+                    <i class="fas fa-upload"></i> 匯入資料
+                </button>
+                <button class="btn btn-danger" onclick="deleteAllTransactions()">
+                    <i class="fas fa-trash-alt"></i> 刪除所有資料
+                </button>
+            </div>
+        </header>
+
+        <!-- 統計卡片 -->
+        <div class="stats-grid">
+            <div class="stat-card weekly">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-week"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>本週累積獲利</h3>
+                    <p class="stat-amount" id="weekly-profit">$0</p>
+                </div>
+            </div>
+            <div class="stat-card monthly">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>本月累積獲利</h3>
+                    <p class="stat-amount" id="monthly-profit">$0</p>
+                </div>
+            </div>
+            <div class="stat-card yearly">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>本年累積獲利</h3>
+                    <p class="stat-amount" id="yearly-profit">$0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 圖表區域 -->
+        <div class="chart-section">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3>營收統計</h3>
+                    <div class="chart-controls">
+                        <button class="chart-btn active" data-period="weekly" onclick="changeChartPeriod('weekly')">每週</button>
+                        <button class="chart-btn" data-period="monthly" onclick="changeChartPeriod('monthly')">每月</button>
+                        <button class="chart-btn" data-period="yearly" onclick="changeChartPeriod('yearly')">每年</button>
+                    </div>
+                </div>
+                <canvas id="stockChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 交易記錄表格 -->
+        <div class="transactions-section">
+            <h3>交易記錄</h3>
+            <div class="table-container">
+                <table class="transactions-table">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>公司名稱</th>
+                            <th>損益</th>
+                            <th>備註</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactions-tbody">
+                        <!-- 動態載入 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增交易模態框 -->
+    <div id="addTransactionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>新增股票交易記錄</h3>
+                <span class="close" onclick="closeModal('addTransactionModal')">&times;</span>
+            </div>
+            <form id="transactionForm">
+                <div class="form-group">
+                    <label for="companyName">公司名稱</label>
+                    <input type="text" id="companyName" placeholder="例如: 台積電" required>
+                </div>
+                <div class="form-group">
+                    <label for="profitLoss">損益金額</label>
+                    <input type="number" id="profitLoss" step="0.01" placeholder="正數為獲利，負數為虧損" required>
+                </div>
+                <div class="form-group">
+                    <label for="transactionDate">交易日期</label>
+                    <input type="date" id="transactionDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="transactionNotes">備註</label>
+                    <input type="text" id="transactionNotes" placeholder="可選">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addTransactionModal')">取消</button>
+                    <button type="submit" class="btn btn-primary">新增</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 匯入資料模態框 -->
+    <div id="importModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>匯入交易資料</h3>
+                <span class="close" onclick="closeModal('importModal')">&times;</span>
+            </div>
+            <div class="import-content">
+                <div class="import-instructions">
+                    <h4>資料格式說明</h4>
+                    <p>請按照以下格式輸入資料，每行一筆交易：</p>
+                    <div class="format-example">
+                        <code>
+                            日期	賺的金額	虧的金額	公司名稱<br>
+                            2025/10/8	2492		華東<br>
+                            2025/10/8	750		康舒<br>
+                            2025/10/9	19169		9月退佣
+                        </code>
+                    </div>
+                    <p><strong>注意：</strong>使用 Tab 鍵分隔各欄位，虧的金額可以留空（表示沒有虧損）</p>
+                </div>
+                <form id="importForm">
+                    <div class="form-group">
+                        <label for="importData">交易資料</label>
+                        <textarea id="importData" rows="10" placeholder="請貼上您的交易資料..." required></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('importModal')">取消</button>
+                        <button type="submit" class="btn btn-primary">匯入資料</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
