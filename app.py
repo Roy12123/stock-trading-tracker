@@ -194,19 +194,30 @@ def get_statistics():
             })
 
     elif period == 'monthly':
-        # 計算過去12個月
+        # 計算過去12個月（手機版會只顯示8個月）
         for i in range(11, -1, -1):
-            month_date = today.replace(day=1) - timedelta(days=i*30)
-            month_date = month_date.replace(day=1)
+            # 計算目標月份
+            target_month = today.month - i
+            target_year = today.year
 
-            if month_date.month == 12:
-                next_month = month_date.replace(year=month_date.year + 1, month=1, day=1)
-            else:
-                next_month = month_date.replace(month=month_date.month + 1, day=1)
+            while target_month <= 0:
+                target_month += 12
+                target_year -= 1
+
+            month_date = date(target_year, target_month, 1)
+
+            # 計算下個月
+            next_month = target_month + 1
+            next_year = target_year
+            if next_month > 12:
+                next_month = 1
+                next_year += 1
+
+            next_month_date = date(next_year, next_month, 1)
 
             month_profit = db.session.query(db.func.sum(StockTransaction.profit_loss)).filter(
                 StockTransaction.date >= month_date,
-                StockTransaction.date < next_month
+                StockTransaction.date < next_month_date
             ).scalar() or 0
 
             revenues.append({

@@ -67,16 +67,18 @@
 
         <!-- 圖表區域 -->
         <div class="chart-section">
-            <div class="chart-container">
-                <div class="chart-header">
-                    <h3>營收統計</h3>
-                    <div class="chart-controls">
-                        <button class="chart-btn active" data-period="weekly" onclick="changeChartPeriod('weekly')">每週</button>
-                        <button class="chart-btn" data-period="monthly" onclick="changeChartPeriod('monthly')">每月</button>
-                        <button class="chart-btn" data-period="yearly" onclick="changeChartPeriod('yearly')">每年</button>
-                    </div>
+            <div class="chart-header">
+                <h3>營收統計</h3>
+                <div class="chart-controls">
+                    <button class="chart-btn active" data-period="weekly" onclick="changeChartPeriod('weekly')">每週</button>
+                    <button class="chart-btn" data-period="monthly" onclick="changeChartPeriod('monthly')">每月</button>
+                    <button class="chart-btn" data-period="yearly" onclick="changeChartPeriod('yearly')">每年</button>
                 </div>
-                <canvas id="stockChart"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <div class="chart-container">
+                    <canvas id="stockChart"></canvas>
+                </div>
             </div>
         </div>
 

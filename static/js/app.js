@@ -227,8 +227,16 @@ function updateRevenueChart(revenueData, period) {
         return;
     }
 
+    // 手機版只顯示最近8個月，桌面版顯示全部
+    const isMobile = window.innerWidth <= 768;
+    let displayData = revenueData;
+
+    if (isMobile && period === 'monthly' && revenueData.length > 8) {
+        displayData = revenueData.slice(-8);  // 只顯示最近8個月
+    }
+
     // 格式化標籤
-    const labels = revenueData.map(item => {
+    const labels = displayData.map(item => {
         if (period === 'weekly') {
             return item.period;  // 已經是 MM/DD 格式
         } else if (period === 'monthly') {
@@ -240,44 +248,60 @@ function updateRevenueChart(revenueData, period) {
         return item.period;
     });
 
-    // 為正值和負值設置不同的顏色
-    const backgroundColors = revenueData.map(item =>
-        item.revenue >= 0 ? 'rgba(46, 204, 113, 0.8)' : 'rgba(231, 76, 60, 0.8)'
-    );
-
-    const borderColors = revenueData.map(item =>
-        item.revenue >= 0 ? 'rgba(46, 204, 113, 1)' : 'rgba(231, 76, 60, 1)'
-    );
-
     stockChart = new Chart(ctx, {
-        type: 'bar',
+        type: 'line',
         data: {
             labels: labels,
             datasets: [{
                 label: '營收',
-                data: revenueData.map(item => item.revenue),
-                backgroundColor: backgroundColors,
-                borderColor: borderColors,
-                borderWidth: 2,
-                borderRadius: 8,
-                barThickness: period === 'yearly' ? 60 : 40
+                data: displayData.map(item => item.revenue),
+                borderColor: 'rgba(52, 152, 219, 1)',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,  // 平滑曲線
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                pointBackgroundColor: 'rgba(52, 152, 219, 1)',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(52, 152, 219, 1)',
+                pointHoverBorderWidth: 3
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
             plugins: {
                 legend: {
                     display: false
                 },
                 tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
                     callbacks: {
                         title: function(context) {
                             const index = context[0].dataIndex;
-                            return revenueData[index].period;
+                            const originalIndex = isMobile && period === 'monthly' ?
+                                revenueData.length - 8 + index : index;
+                            return revenueData[originalIndex].period;
                         },
                         label: function(context) {
-                            return `營收: ${formatCurrency(context.parsed.y)}`;
+                            const value = context.parsed.y;
+                            const color = value >= 0 ? '📈' : '📉';
+                            return `${color} 營收: ${formatCurrency(value)}`;
                         }
                     }
                 }
@@ -290,24 +314,28 @@ function updateRevenueChart(revenueData, period) {
                             return formatCurrency(value);
                         },
                         font: {
-                            size: 12
+                            size: 11
                         },
                         color: '#7f8c8d'
                     },
                     grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
+                        color: 'rgba(0, 0, 0, 0.05)',
+                        drawBorder: false
                     }
                 },
                 x: {
                     ticks: {
                         font: {
-                            size: 16,
+                            size: isMobile ? 13 : 16,
                             weight: 'bold'
                         },
-                        color: '#2c3e50'
+                        color: '#2c3e50',
+                        maxRotation: 0,
+                        minRotation: 0
                     },
                     grid: {
-                        display: false
+                        display: false,
+                        drawBorder: false
                     }
                 }
             }
