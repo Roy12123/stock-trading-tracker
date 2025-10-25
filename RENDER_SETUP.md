@@ -1,9 +1,14 @@
 # Render 部署設定指南
 
 ## 當前問題
-您的應用程式已部署到 https://stock-trading-tracker.onrender.com/，但資料庫缺少 `is_personal` 欄位。
+您的應用程式已部署到 https://stock-trading-tracker.onrender.com/，但資料庫缺少 `is_personal` 欄位，導致新增交易失敗。
 
-## 解決方案
+## 解決方案（已自動化）
+
+**最新更新**：程式碼已經包含自動資料庫遷移功能！
+- 應用啟動時會自動檢查並新增缺少的 `is_personal` 欄位
+- 支援 PostgreSQL 和 SQLite 兩種資料庫
+- Render 重新部署後會自動完成遷移
 
 ### 步驟 1：更新環境變數
 
