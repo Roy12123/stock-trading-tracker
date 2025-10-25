@@ -263,13 +263,13 @@ function updateRevenueChart(revenueData, period) {
         return;
     }
 
-    // 手機版只顯示最近5筆，桌面版顯示全部
+    // 手機版顯示8筆，桌面版顯示全部
     const isMobile = window.innerWidth <= 768;
     let displayData = revenueData;
-    let displayLimit = 5; // 手機版顯示數量
+    let displayLimit = 8; // 手機版顯示數量
 
     if (isMobile && revenueData.length > displayLimit) {
-        displayData = revenueData.slice(-displayLimit);  // 只顯示最近5筆
+        displayData = revenueData.slice(-displayLimit);  // 只顯示最近8筆
     }
 
     // 格式化標籤
@@ -304,8 +304,9 @@ function updateRevenueChart(revenueData, period) {
                 backgroundColor: backgroundColors,
                 borderColor: borderColors,
                 borderWidth: 2,
-                borderRadius: 8,
-                barThickness: isMobile ? 'flex' : 50
+                borderRadius: 6,
+                barPercentage: isMobile ? 0.7 : 0.8,  // 控制柱狀圖類別的寬度
+                categoryPercentage: isMobile ? 0.85 : 0.9  // 控制整體類別的寬度
             }]
         },
         options: {
@@ -362,12 +363,13 @@ function updateRevenueChart(revenueData, period) {
                 x: {
                     ticks: {
                         font: {
-                            size: isMobile ? 13 : 16,
+                            size: isMobile ? 12 : 16,
                             weight: 'bold'
                         },
                         color: '#2c3e50',
                         maxRotation: 0,
-                        minRotation: 0
+                        minRotation: 0,
+                        autoSkip: false  // 顯示所有標籤
                     },
                     grid: {
                         display: false,
