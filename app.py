@@ -24,14 +24,16 @@ class StockTransaction(db.Model):
     profit_loss = db.Column(db.Float, nullable=False)  # 損益金額
     date = db.Column(db.Date, nullable=False, default=date.today)
     notes = db.Column(db.String(200))  # 備註
-    
+    is_personal = db.Column(db.Boolean, default=False)  # 是否為個人操作
+
     def to_dict(self):
         return {
             'id': self.id,
             'company_name': self.company_name,
             'profit_loss': self.profit_loss,
             'date': self.date.strftime('%Y-%m-%d'),
-            'notes': self.notes
+            'notes': self.notes,
+            'is_personal': self.is_personal
         }
 
 # 檢查登入裝飾器
@@ -87,7 +89,8 @@ def create_transaction():
         company_name=data['company_name'],
         profit_loss=data['profit_loss'],
         date=datetime.strptime(data['date'], '%Y-%m-%d').date(),
-        notes=data.get('notes', '')
+        notes=data.get('notes', ''),
+        is_personal=data.get('is_personal', False)
     )
     db.session.add(transaction)
     db.session.commit()
@@ -164,7 +167,8 @@ def import_data():
     """匯入交易資料"""
     data = request.get_json()
     transactions_data = data.get('transactions', [])
-    
+    is_personal_import = data.get('is_personal', False)  # 是否為個人操作匯入
+
     imported_count = 0
     for transaction in transactions_data:
         try:
@@ -197,7 +201,8 @@ def import_data():
                 company_name=transaction.get('company_name', ''),
                 profit_loss=net_profit,
                 date=transaction_date,
-                notes=f"匯入資料 - 賺: {profit_amount}, 虧: {loss_amount}"
+                notes=f"匯入資料 - 賺: {profit_amount}, 虧: {loss_amount}",
+                is_personal=is_personal_import
             )
             
             db.session.add(stock_transaction)
@@ -254,8 +259,9 @@ def get_statistics():
         StockTransaction.date >= month_start
     ).group_by(StockTransaction.company_name).all()
 
-    # 根據時間範圍計算營收資料
-    revenues = []
+    # 根據時間範圍計算營收資料（總營收和個人操作營收）
+    total_revenues = []
+    personal_revenues = []
 
     if period == 'weekly':
         # 計算過去12週
@@ -263,14 +269,27 @@ def get_statistics():
             week_start_date = today - timedelta(days=today.weekday()) - timedelta(weeks=i)
             week_end_date = week_start_date + timedelta(days=6)
 
+            # 總營收
             week_profit = db.session.query(db.func.sum(StockTransaction.profit_loss)).filter(
                 StockTransaction.date >= week_start_date,
                 StockTransaction.date <= week_end_date
             ).scalar() or 0
 
-            revenues.append({
+            # 個人操作營收
+            week_personal_profit = db.session.query(db.func.sum(StockTransaction.profit_loss)).filter(
+                StockTransaction.date >= week_start_date,
+                StockTransaction.date <= week_end_date,
+                StockTransaction.is_personal == True
+            ).scalar() or 0
+
+            total_revenues.append({
                 'period': f'{week_start_date.strftime("%m/%d")}',
                 'revenue': float(week_profit)
+            })
+
+            personal_revenues.append({
+                'period': f'{week_start_date.strftime("%m/%d")}',
+                'revenue': float(week_personal_profit)
             })
 
     elif period == 'monthly':
@@ -295,14 +314,27 @@ def get_statistics():
 
             next_month_date = date(next_year, next_month, 1)
 
+            # 總營收
             month_profit = db.session.query(db.func.sum(StockTransaction.profit_loss)).filter(
                 StockTransaction.date >= month_date,
                 StockTransaction.date < next_month_date
             ).scalar() or 0
 
-            revenues.append({
+            # 個人操作營收
+            month_personal_profit = db.session.query(db.func.sum(StockTransaction.profit_loss)).filter(
+                StockTransaction.date >= month_date,
+                StockTransaction.date < next_month_date,
+                StockTransaction.is_personal == True
+            ).scalar() or 0
+
+            total_revenues.append({
                 'period': month_date.strftime('%Y-%m'),
                 'revenue': float(month_profit)
+            })
+
+            personal_revenues.append({
+                'period': month_date.strftime('%Y-%m'),
+                'revenue': float(month_personal_profit)
             })
 
     elif period == 'yearly':
@@ -313,14 +345,27 @@ def get_statistics():
             year_start_date = date(year, 1, 1)
             year_end_date = date(year, 12, 31)
 
+            # 總營收
             year_profit = db.session.query(db.func.sum(StockTransaction.profit_loss)).filter(
                 StockTransaction.date >= year_start_date,
                 StockTransaction.date <= year_end_date
             ).scalar() or 0
 
-            revenues.append({
+            # 個人操作營收
+            year_personal_profit = db.session.query(db.func.sum(StockTransaction.profit_loss)).filter(
+                StockTransaction.date >= year_start_date,
+                StockTransaction.date <= year_end_date,
+                StockTransaction.is_personal == True
+            ).scalar() or 0
+
+            total_revenues.append({
                 'period': str(year),
                 'revenue': float(year_profit)
+            })
+
+            personal_revenues.append({
+                'period': str(year),
+                'revenue': float(year_personal_profit)
             })
 
     return jsonify({
@@ -331,7 +376,8 @@ def get_statistics():
             'company_name': name,
             'profit': float(profit)
         } for name, profit in company_profits],
-        'revenues': revenues
+        'total_revenues': total_revenues,
+        'personal_revenues': personal_revenues
     })
 
 if __name__ == '__main__':

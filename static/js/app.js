@@ -1,7 +1,9 @@
 // 全局變量
 let transactions = [];
-let stockChart = null;
-let currentPeriod = 'weekly';  // 預設為每週
+let totalChart = null;
+let personalChart = null;
+let currentTotalPeriod = 'weekly';  // 總營收預設為每週
+let currentPersonalPeriod = 'weekly';  // 個人操作預設為每週
 
 // 頁面載入時初始化
 document.addEventListener('DOMContentLoaded', function() {
@@ -36,21 +38,27 @@ async function loadTransactions() {
 }
 
 // 載入統計數據
-async function loadStatistics(period = currentPeriod) {
+async function loadStatistics() {
     try {
-        const response = await fetch(`/api/statistics?period=${period}`);
-        const stats = await response.json();
+        // 載入總營收統計
+        const totalResponse = await fetch(`/api/statistics?period=${currentTotalPeriod}`);
+        const totalStats = await totalResponse.json();
+
+        // 載入個人操作統計
+        const personalResponse = await fetch(`/api/statistics?period=${currentPersonalPeriod}`);
+        const personalStats = await personalResponse.json();
 
         // 更新週/月/年收益
-        document.getElementById('weekly-profit').textContent = formatCurrency(stats.weekly_profit);
-        document.getElementById('monthly-profit').textContent = formatCurrency(stats.monthly_profit);
-        document.getElementById('yearly-profit').textContent = formatCurrency(stats.yearly_profit);
+        document.getElementById('weekly-profit').textContent = formatCurrency(totalStats.weekly_profit);
+        document.getElementById('monthly-profit').textContent = formatCurrency(totalStats.monthly_profit);
+        document.getElementById('yearly-profit').textContent = formatCurrency(totalStats.yearly_profit);
 
         // 更新收益顏色
-        updateProfitColors(stats.weekly_profit, stats.monthly_profit, stats.yearly_profit);
+        updateProfitColors(totalStats.weekly_profit, totalStats.monthly_profit, totalStats.yearly_profit);
 
-        // 更新營收圖表
-        updateRevenueChart(stats.revenues, period);
+        // 更新兩個圖表
+        updateRevenueChart(totalStats.total_revenues, currentTotalPeriod, 'total');
+        updateRevenueChart(personalStats.personal_revenues, currentPersonalPeriod, 'personal');
     } catch (error) {
         console.error('載入統計數據失敗:', error);
         showNotification('載入統計數據失敗', 'error');
@@ -58,17 +66,29 @@ async function loadStatistics(period = currentPeriod) {
 }
 
 // 切換圖表時間範圍
-function changeChartPeriod(period) {
-    currentPeriod = period;
-
-    // 更新按鈕狀態
-    document.querySelectorAll('.chart-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelector(`[data-period="${period}"]`).classList.add('active');
+function changeChartPeriod(period, chartType) {
+    if (chartType === 'total') {
+        currentTotalPeriod = period;
+        // 更新總營收按鈕狀態
+        document.querySelectorAll('.chart-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-period') === period && btn.onclick.toString().includes('total')) {
+                btn.classList.add('active');
+            }
+        });
+    } else {
+        currentPersonalPeriod = period;
+        // 更新個人操作按鈕狀態
+        document.querySelectorAll('.chart-btn-personal').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-period') === period) {
+                btn.classList.add('active');
+            }
+        });
+    }
 
     // 重新載入統計數據
-    loadStatistics(period);
+    loadStatistics();
 }
 
 
@@ -110,14 +130,15 @@ function displayTransactions() {
 // 處理交易表單提交
 async function handleTransactionSubmit(e) {
     e.preventDefault();
-    
+
     const formData = {
         company_name: document.getElementById('companyName').value,
         profit_loss: parseFloat(document.getElementById('profitLoss').value),
         date: document.getElementById('transactionDate').value,
-        notes: document.getElementById('transactionNotes').value
+        notes: document.getElementById('transactionNotes').value,
+        is_personal: document.getElementById('isPersonal').checked
     };
-    
+
     try {
         const response = await fetch('/api/transactions', {
             method: 'POST',
@@ -126,7 +147,7 @@ async function handleTransactionSubmit(e) {
             },
             body: JSON.stringify(formData)
         });
-        
+
         if (response.ok) {
             showNotification('交易記錄新增成功', 'success');
             closeModal('addTransactionModal');
@@ -247,11 +268,16 @@ async function confirmDelete() {
 }
 
 // 更新營收圖表
-function updateRevenueChart(revenueData, period) {
-    const ctx = document.getElementById('stockChart').getContext('2d');
+function updateRevenueChart(revenueData, period, chartType) {
+    // 根據圖表類型選擇正確的 canvas 和圖表實例
+    const canvasId = chartType === 'total' ? 'totalChart' : 'personalChart';
+    const ctx = document.getElementById(canvasId).getContext('2d');
 
-    if (stockChart) {
-        stockChart.destroy();
+    // 銷毀舊圖表
+    if (chartType === 'total' && totalChart) {
+        totalChart.destroy();
+    } else if (chartType === 'personal' && personalChart) {
+        personalChart.destroy();
     }
 
     if (!revenueData || revenueData.length === 0) {
@@ -294,7 +320,7 @@ function updateRevenueChart(revenueData, period) {
         item.revenue >= 0 ? 'rgba(46, 204, 113, 1)' : 'rgba(231, 76, 60, 1)'
     );
 
-    stockChart = new Chart(ctx, {
+    const newChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
@@ -379,6 +405,13 @@ function updateRevenueChart(revenueData, period) {
             }
         }
     });
+
+    // 保存圖表實例到對應的全局變量
+    if (chartType === 'total') {
+        totalChart = newChart;
+    } else {
+        personalChart = newChart;
+    }
 }
 
 // 處理匯入表單提交
@@ -424,14 +457,20 @@ async function handleImportSubmit(e) {
             showNotification('沒有找到有效的交易資料', 'error');
             return;
         }
-        
+
+        // 取得個人操作選項
+        const isPersonalImport = document.getElementById('isPersonalImport').checked;
+
         // 發送匯入請求
         const response = await fetch('/api/import-data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ transactions })
+            body: JSON.stringify({
+                transactions: transactions,
+                is_personal: isPersonalImport
+            })
         });
         
         const result = await response.json();

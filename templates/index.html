@@ -68,19 +68,36 @@
             </div>
         </div>
 
-        <!-- 圖表區域 -->
+        <!-- 總營收圖表區域 -->
         <div class="chart-section">
             <div class="chart-header">
-                <h3>營收統計</h3>
+                <h3>總營收統計</h3>
                 <div class="chart-controls">
-                    <button class="chart-btn active" data-period="weekly" onclick="changeChartPeriod('weekly')">每週</button>
-                    <button class="chart-btn" data-period="monthly" onclick="changeChartPeriod('monthly')">每月</button>
-                    <button class="chart-btn" data-period="yearly" onclick="changeChartPeriod('yearly')">每年</button>
+                    <button class="chart-btn active" data-period="weekly" onclick="changeChartPeriod('weekly', 'total')">每週</button>
+                    <button class="chart-btn" data-period="monthly" onclick="changeChartPeriod('monthly', 'total')">每月</button>
+                    <button class="chart-btn" data-period="yearly" onclick="changeChartPeriod('yearly', 'total')">每年</button>
                 </div>
             </div>
             <div class="chart-wrapper">
                 <div class="chart-container">
-                    <canvas id="stockChart"></canvas>
+                    <canvas id="totalChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 個人操作營收圖表區域 -->
+        <div class="chart-section">
+            <div class="chart-header">
+                <h3>個人操作營收統計</h3>
+                <div class="chart-controls">
+                    <button class="chart-btn-personal active" data-period="weekly" onclick="changeChartPeriod('weekly', 'personal')">每週</button>
+                    <button class="chart-btn-personal" data-period="monthly" onclick="changeChartPeriod('monthly', 'personal')">每月</button>
+                    <button class="chart-btn-personal" data-period="yearly" onclick="changeChartPeriod('yearly', 'personal')">每年</button>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <div class="chart-container">
+                    <canvas id="personalChart"></canvas>
                 </div>
             </div>
         </div>
@@ -131,6 +148,12 @@
                     <label for="transactionNotes">備註</label>
                     <input type="text" id="transactionNotes" placeholder="可選">
                 </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="isPersonal">
+                        <span>個人操作</span>
+                    </label>
+                </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('addTransactionModal')">取消</button>
                     <button type="submit" class="btn btn-primary">新增</button>
@@ -164,6 +187,12 @@
                     <div class="form-group">
                         <label for="importData">交易資料</label>
                         <textarea id="importData" rows="10" placeholder="請貼上您的交易資料..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="isPersonalImport">
+                            <span>這些是個人操作的交易</span>
+                        </label>
                     </div>
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" onclick="closeModal('importModal')">取消</button>
