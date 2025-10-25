@@ -17,6 +17,10 @@ db = SQLAlchemy(app)
 # 密碼設定
 PASSWORD = os.environ.get('APP_PASSWORD', 'B122917588')
 
+# 初始化資料庫（在應用啟動時自動建立資料表）
+with app.app_context():
+    db.create_all()
+
 # 數據庫模型
 class StockTransaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
