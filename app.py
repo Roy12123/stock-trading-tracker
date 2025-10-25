@@ -17,10 +17,6 @@ db = SQLAlchemy(app)
 # 密碼設定
 PASSWORD = os.environ.get('APP_PASSWORD', 'B122917588')
 
-# 初始化資料庫（在應用啟動時自動建立資料表）
-with app.app_context():
-    db.create_all()
-
 # 數據庫模型
 class StockTransaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -39,6 +35,36 @@ class StockTransaction(db.Model):
             'notes': self.notes,
             'is_personal': self.is_personal
         }
+
+# 初始化資料庫（在應用啟動時自動建立資料表並遷移）
+with app.app_context():
+    db.create_all()
+
+    # 檢查並新增 is_personal 欄位（用於遷移舊資料庫）
+    try:
+        from sqlalchemy import text, inspect
+        inspector = inspect(db.engine)
+
+        # 檢查資料表是否存在
+        if 'stock_transaction' in inspector.get_table_names():
+            columns = [col['name'] for col in inspector.get_columns('stock_transaction')]
+
+            if 'is_personal' not in columns:
+                print("正在新增 is_personal 欄位...")
+                # 根據資料庫類型使用不同的語法
+                if 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']:
+                    db.session.execute(text(
+                        "ALTER TABLE stock_transaction ADD COLUMN is_personal BOOLEAN DEFAULT FALSE"
+                    ))
+                else:  # SQLite
+                    db.session.execute(text(
+                        "ALTER TABLE stock_transaction ADD COLUMN is_personal BOOLEAN DEFAULT 0"
+                    ))
+                db.session.commit()
+                print("✅ is_personal 欄位新增成功！")
+    except Exception as e:
+        print(f"資料庫遷移檢查: {e}")
+        pass
 
 # 檢查登入裝飾器
 def login_required(f):
